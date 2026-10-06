@@ -1,0 +1,44 @@
+# Render Blueprint (Infrastructure as Code).
+# Render panelida: New → Blueprint → shu repo. Postgres va web service
+# birga yaratiladi, DATABASE_URL avtomatik ulanadi.
+
+databases:
+  - name: update-dashboard-db
+    # Boshqariladigan Postgres: deploy/restartga bog'liq emas, zaxira nusxa oladi.
+    plan: basic-256mb
+    databaseName: update_dashboard
+    user: update_dashboard
+    ipAllowList: [] # faqat Render ichki tarmog'idan
+
+services:
+  - type: web
+    name: update-dashboard
+    runtime: node
+    # Bepul tarif EMAS: bepul instance faolsizlikda uxlaydi va fon yangilanishi
+    # (har daqiqada platformadan ma'lumot olish, DOT izlari) to'xtab qoladi.
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: update-dashboard-db
+          property: connectionString # ichki ulanish satri (bir region ichida)
+      # Blueprint yaratilganda bir marta tasodifiy qiymat beriladi va o'zgarmaydi.
+      # Uni almashtirsangiz saqlangan ELD tokenlari o'qilmay qoladi (qayta ulash kerak).
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEFAULT_ADMIN_LOGIN
+        value: admin
+      # Maxfiy qiymatlar repoga tushmaydi: Render birinchi deploy'da so'raydi.
+      - key: DEFAULT_ADMIN_PASSWORD
+        sync: false
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: REFRESH_INTERVAL_SEC
+        value: 60

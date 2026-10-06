@@ -1,0 +1,28 @@
+{
+  "name": "update-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "dev:web": "vite",
+    "build": "vite build",
+    "start": "node src/server.js",
+    "test": "node --test --import ./test/setup.js",
+    "dot:check": "node scripts/dot-check.js"
+  },
+  "dependencies": {
+    "pg": "^8.23.1",
+    "@vitejs/plugin-react": "^6.1.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router-dom": "^7.18.4",
+    "vite": "^8.3.3"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8"
+  }
+}
