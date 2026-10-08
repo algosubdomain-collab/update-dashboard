@@ -4,9 +4,11 @@
 
 databases:
   - name: update-dashboard-db
-    # Boshqariladigan Postgres: deploy/restartga bog'liq emas, zaxira nusxa oladi.
-    # Tarif nomlari Render'ning hozirgi "compute plan" formatida (2026).
-    plan: 0.1c-256mb
+    # Boshqariladigan Postgres: deploy/restartga bog'liq emas.
+    # HOZIR BEPUL: Render bepul Postgres'ni yaratilganidan 30 kun o'tib O'CHIRADI
+    # (foydalanuvchilar, tokenlar, board ma'lumoti bilan). Undan oldin pullik
+    # tarifga o'tkazing: plan: 0.1c-256mb (zaxira nusxa ham shunda paydo bo'ladi).
+    plan: free
     databaseName: update_dashboard
     user: update_dashboard
     ipAllowList: [] # bo'sh — tashqi internetdan yopiq, faqat Render ichki tarmog'idan
@@ -15,9 +17,10 @@ services:
   - type: web
     name: update-dashboard
     runtime: node
-    # 0.5c-512mb (eski "Starter"). Bepul tarif EMAS: bepul instance uxlaydi va fon yangilanishi
-    # (har daqiqada platformadan ma'lumot olish, DOT izlari) to'xtab qoladi.
-    plan: 0.5c-512mb
+    # HOZIR BEPUL: 15 daqiqa so'rov bo'lmasa xizmat uxlaydi — shu vaqtda fon
+    # yangilanishi (platformadan ma'lumot olish, DOT izlari) to'xtaydi, birinchi
+    # kirishda ~1 daqiqa uyg'onadi. Doimiy ishlashi uchun: plan: 0.5c-512mb.
+    plan: free
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /healthz
