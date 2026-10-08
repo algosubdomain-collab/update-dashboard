@@ -93,8 +93,8 @@ almashtiriladi.
 1. Kodni GitHub/GitLab repoga joylang (`.env`, `node_modules/`, `public/`,
    `data/` — `.gitignore` da).
 2. Render → **New → Blueprint** → repo'ni tanlang. `render.yaml` dan:
-   - `update-dashboard-db` — managed Postgres;
-   - `update-dashboard` — web service (**Starter**; bepul tarif uxlab qoladi
+   - `update-dashboard-db` — managed Postgres (`0.1c-256mb`);
+   - `update-dashboard` — web service (`0.5c-512mb`, eski Starter; bepul tarif uxlab qoladi
      va fon yangilanishi to'xtaydi).
 3. Render so'raganda maxfiy qiymatlarni kiriting:
    - `DEFAULT_ADMIN_PASSWORD` — birinchi owner paroli (kamida 8 belgi);

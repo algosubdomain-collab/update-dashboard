@@ -5,18 +5,19 @@
 databases:
   - name: update-dashboard-db
     # Boshqariladigan Postgres: deploy/restartga bog'liq emas, zaxira nusxa oladi.
-    plan: basic-256mb
+    # Tarif nomlari Render'ning hozirgi "compute plan" formatida (2026).
+    plan: 0.1c-256mb
     databaseName: update_dashboard
     user: update_dashboard
-    ipAllowList: [] # faqat Render ichki tarmog'idan
+    ipAllowList: [] # bo'sh — tashqi internetdan yopiq, faqat Render ichki tarmog'idan
 
 services:
   - type: web
     name: update-dashboard
     runtime: node
-    # Bepul tarif EMAS: bepul instance faolsizlikda uxlaydi va fon yangilanishi
+    # 0.5c-512mb (eski "Starter"). Bepul tarif EMAS: bepul instance uxlaydi va fon yangilanishi
     # (har daqiqada platformadan ma'lumot olish, DOT izlari) to'xtab qoladi.
-    plan: starter
+    plan: 0.5c-512mb
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /healthz
