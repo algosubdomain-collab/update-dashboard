@@ -67,3 +67,34 @@ test('fleet: kesh foydalanuvchi:platforma bo\'yicha alohida', async () => {
   fleet.forget('a');
   assert.deepEqual(fleet.keys(), ['b:p']);
 });
+
+test('fleet: "Latest" — ketayotgan yig\'ishga qo\'shiladi, 15 s ichida qayta bormaydi', async () => {
+  let t = NOW;
+  let calls = 0;
+  const fleet = createFleetCache({
+    getConnection: async () => ({ token: 't', meta: {} }),
+    getProvider: () => provider(async () => {
+      calls++;
+      await new Promise((r) => setTimeout(r, 10));
+      return { drivers: [{ driverId: '1', lastUpdate: null }], errors: [] };
+    }),
+    now: () => t,
+  });
+  // Fon yig'ishi ketyapti — tugma unga qo'shiladi, ikkinchi so'rov yo'q.
+  const bg = fleet.refresh('u', 'p');
+  const manual = await fleet.refreshNow('u', 'p');
+  await bg;
+  assert.equal(calls, 1);
+  assert.equal(manual.skipped, false);
+  assert.ok(manual.durationMs !== null);
+
+  t += 5_000;
+  const again = await fleet.refreshNow('u', 'p');
+  assert.equal(again.skipped, true);
+  assert.equal(calls, 1);
+
+  t += 20_000;
+  const later = await fleet.refreshNow('u', 'p');
+  assert.equal(later.skipped, false);
+  assert.equal(calls, 2);
+});

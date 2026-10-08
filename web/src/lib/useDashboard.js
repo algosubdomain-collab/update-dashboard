@@ -120,6 +120,35 @@ export function useDashboard(provider, user) {
     [by, toast],
   );
 
+  // Fon yig'ishi tugashi bilan yangi ma'lumotni olish: 30 s lik so'rovni
+  // kutib o'tirmaymiz — server "keyingi yig'ish qachon" ni aytadi.
+  useEffect(() => {
+    const next = fleet?.schedule?.nextAt;
+    if (!next) return undefined;
+    const wait = Date.parse(next) - Date.now() + Math.min(fleet.durationMs ?? 5000, 60_000) + 1500;
+    if (wait <= 0 || wait > 10 * 60_000) return undefined;
+    const t = setTimeout(() => {
+      if (document.visibilityState === 'visible') loadFleet();
+    }, wait);
+    return () => clearTimeout(t);
+  }, [fleet, loadFleet]);
+
+  // "Latest": platformadan hozir yig'ish. Server hozirgina yangilangan bo'lsa
+  // (15 s ichida) platformaga qayta bormaydi — skipped=true qaytaradi.
+  const [manual, setManual] = useState(false);
+  const refreshNow = useCallback(async () => {
+    if (!provider) return null;
+    setManual(true);
+    try {
+      const r = await post('/api/drivers/refresh', { provider });
+      setFleet(r);
+      setFleetError(null);
+      return r;
+    } finally {
+      setManual(false);
+    }
+  }, [provider]);
+
   const saveConfig = useCallback(async (next) => {
     const r = await put('/api/board-config', { config: next });
     setConfig(r.config);
@@ -135,5 +164,5 @@ export function useDashboard(provider, user) {
     [provider],
   );
 
-  return { fleet, fleetError, rows, config, configLoaded: config !== null, patchRow, bulk, saveConfig, certify, reload: loadFleet };
+  return { fleet, fleetError, rows, config, configLoaded: config !== null, patchRow, bulk, saveConfig, certify, reload: loadFleet, refreshNow, manualRefreshing: manual };
 }

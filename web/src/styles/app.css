@@ -327,7 +327,7 @@ input[type='checkbox'] {
   font-weight: 500;
   color: var(--text-3);
   border: 1px solid var(--line-strong);
-  border-radius: var(--r-pill);
+  border-radius: var(--r-tag);
   padding: 0 var(--sp-2);
   margin-left: var(--sp-1);
 }
@@ -505,13 +505,73 @@ kbd {
   opacity: 1;
 }
 
+.tabs-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--line);
+}
 .board-tabs {
   display: flex;
+  flex: 1 1 240px;
+  min-width: 0;
   gap: var(--sp-1);
   overflow-x: auto;
   scrollbar-width: thin;
-  margin-bottom: var(--sp-3);
-  border-bottom: 1px solid var(--line);
+}
+
+/* Platformadan yangilanish holati + "Latest" */
+.sync {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding-bottom: var(--sp-1);
+  font-size: var(--fs-2);
+  color: var(--text-2);
+}
+.sync-text {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.sync-text > span + span::before {
+  content: '·';
+  margin-right: var(--sp-2);
+  color: var(--text-3);
+}
+.sync-dot {
+  flex: none;
+  width: var(--sp-2);
+  height: var(--sp-2);
+  border-radius: var(--r-pill);
+  background: var(--lime);
+}
+.sync-dot.is-busy {
+  background: var(--sky);
+  animation: blink 1s ease-in-out infinite;
+}
+.sync-dot.is-stale {
+  background: var(--amber);
+}
+.sync-icon {
+  display: inline-block;
+}
+.sync-icon.is-spinning {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes blink {
+  50% { opacity: 0.35; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sync-dot.is-busy,
+  .sync-icon.is-spinning {
+    animation: none;
+  }
 }
 .btab {
   flex: none;
@@ -952,7 +1012,7 @@ a.driver-name:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 0 var(--sp-2);
-  border-radius: var(--r-pill);
+  border-radius: var(--r-tag);
   font-size: var(--fs-2);
   font-weight: 500;
   line-height: calc(var(--sp-5) + 2px);
@@ -1505,7 +1565,7 @@ input.board-name:focus-visible {
   max-width: 260px;
   padding: 0 var(--sp-1) 0 var(--sp-3);
   border: 1px solid var(--line-strong);
-  border-radius: var(--r-pill);
+  border-radius: var(--r-tag);
   background: var(--surface-2);
   font-size: var(--fs-2);
   line-height: var(--sp-6);
@@ -1514,7 +1574,7 @@ input.board-name:focus-visible {
   width: var(--sp-5);
   height: var(--sp-5);
   border: 0;
-  border-radius: var(--r-pill);
+  border-radius: var(--r-tag);
   background: transparent;
   color: var(--text-3);
   cursor: pointer;

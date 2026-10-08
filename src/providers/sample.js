@@ -121,7 +121,26 @@ function buildDriver(i, now) {
     trailer,
     shipping: rand() < 0.1 ? null : shipping,
     from: changed ? { trailer: `TR${4000 + Math.floor(rand() * 5000)}`, shipping: `BOL-${100000 + Math.floor(rand() * 899999)}` } : null,
+    location: changed ? near : null,
+    lat: changed ? a[0] : null,
+    lon: changed ? a[1] : null,
   };
+
+  // Log xatolari — har 4-haydovchida, turi bo'yicha guruhlangan, sanalar bilan.
+  const day = (n) => new Date(now - n * 86400_000).toISOString().slice(0, 10);
+  const ERR = [
+    ['ODOMETER_JUMP', 'Odometer jump'],
+    ['ENGINE_HOURS_JUMP', 'Engine hours jump'],
+    ['MISSING_SHIPPING_DOCS', 'Missing shipping documents'],
+    ['UNIDENTIFIED_DRIVING', 'Unidentified driving'],
+  ];
+  const issues = { errors: [], violations: [] };
+  if (rand() < 0.25) {
+    const [type, text] = pick(ERR);
+    const count = 1 + Math.floor(rand() * 3);
+    issues.errors.push({ type, text, count, dates: Array.from({ length: count }, (_, k) => day(k * 2 + 1)) });
+  }
+  if (rand() < 0.08) issues.violations.push({ type: 'DRIVING_11', text: '11-hour driving limit', count: 1, dates: [day(2)] });
 
   return driverShape({
     driverId: `s-${1000 + i}`,
@@ -149,6 +168,7 @@ function buildDriver(i, now) {
     lastUpdate,
     logUrl: null,
     formChange,
+    issues,
   });
 }
 

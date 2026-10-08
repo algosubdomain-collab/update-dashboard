@@ -29,12 +29,13 @@ export default function Dropdown({ value, options, onChange, label, emptyHint, o
 
   function place() {
     const r = btn.current.getBoundingClientRect();
-    const h = Math.min(320, items.length * 32 + 8);
+    const h = Math.min(320, items.length * 32 + 18);
     const below = window.innerHeight - r.bottom;
-    const top = below < h + 8 && r.top > h + 8 ? r.top - h - 4 : r.bottom + 4;
-    const width = Math.max(r.width, 180);
+    // Pastda joy bo'lmasa — tugma ustiga ochiladi (pastki chetga qarab o'sadi).
+    const above = below < h + 8 && r.top > h + 8;
+    const width = Math.max(r.width, 190);
     const left = Math.min(r.left, window.innerWidth - width - 8);
-    setPos({ top, left: Math.max(8, left), width });
+    setPos(above ? { bottom: window.innerHeight - r.top + 4, left: Math.max(8, left), width, above } : { top: r.bottom + 4, left: Math.max(8, left), width, above });
   }
 
   function openList() {
@@ -131,8 +132,9 @@ export default function Dropdown({ value, options, onChange, label, emptyHint, o
         onKeyDown={onBtnKey}
       >
         {value ? (
-          <span className={`pill ${stale ? 'pill-stale' : `pill-${current.color}`}`} title={stale ? `"${value}" is no longer in the list` : value}>
-            {value}
+          <span className={`opt-pill ${stale ? 'is-stale' : `c-${current.color}`}`} title={stale ? `"${value}" is no longer in the list` : value}>
+            <span className="opt-dot" aria-hidden="true" />
+            <span>{value}</span>
           </span>
         ) : (
           <span className="dd-dash">—</span>
@@ -144,15 +146,17 @@ export default function Dropdown({ value, options, onChange, label, emptyHint, o
         createPortal(
           <ul
             ref={list}
-            className="menu"
+            className={`menu ${pos.above ? 'is-above' : ''}`}
             role="listbox"
             tabIndex={-1}
             aria-label={label}
             aria-activedescendant={`${id}-${active}`}
-            style={{ top: pos.top, left: pos.left, minWidth: pos.width }}
+            style={{ top: pos.top, bottom: pos.bottom, left: pos.left, minWidth: pos.width }}
             onKeyDown={onListKey}
           >
-            {items.map((it, i) => (
+            {items.map((it, i) => [
+              // "Clear" dan oldin ajratgich chiziq.
+              it.kind !== 'opt' && i > 0 && items[i - 1].kind === 'opt' ? <li key={`sep-${i}`} className="menu-sep" role="separator" /> : null,
               <li
                 key={`${it.kind}-${it.label}`}
                 id={`${id}-${i}`}
@@ -164,10 +168,17 @@ export default function Dropdown({ value, options, onChange, label, emptyHint, o
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => choose(it)}
               >
-                {it.kind === 'opt' ? <span className={`pill pill-${it.color}`}>{it.label}</span> : it.label}
-                {it.kind === 'opt' && it.label === value && <span className="menu-check" aria-hidden="true">✓</span>}
-              </li>
-            ))}
+                {it.kind === 'opt' ? (
+                  <span className={`opt-pill c-${it.color}`}>
+                    <span className="opt-dot" aria-hidden="true" />
+                    <span>{it.label}</span>
+                  </span>
+                ) : (
+                  it.label
+                )}
+                {it.kind === 'opt' && it.label === value && <span className="menu-tick" aria-hidden="true">✓</span>}
+              </li>,
+            ])}
           </ul>,
           document.body,
         )}

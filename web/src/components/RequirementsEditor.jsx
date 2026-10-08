@@ -129,7 +129,6 @@ function CompanyNotes({ provider, company, rows, note, onSaveCompany, onSaveDriv
     setBusy(true);
     try {
       await onSaveCompany(`${provider}:${company.id}`, text);
-      toast.show(text.trim() ? `Note saved for ${company.name}` : `Note removed from ${company.name}`);
     } catch (err) {
       toast.show(`Not saved: ${err.message}`, { tone: 'error' });
     } finally {
@@ -170,7 +169,7 @@ function CompanyNotes({ provider, company, rows, note, onSaveCompany, onSaveDriv
         <div className="row-line">
           <span className="muted small grow">Shown on the company row in the dashboard, not under each driver.</span>
           {note && (
-            <button type="button" className="btn btn-xs btn-ghost" disabled={busy} onClick={() => { setText(''); onSaveCompany(`${provider}:${company.id}`, '').then(() => toast.show(`Note removed from ${company.name}`)); }}>
+            <button type="button" className="btn btn-xs btn-ghost" disabled={busy} onClick={() => { setText(''); onSaveCompany(`${provider}:${company.id}`, ''); }}>
               Remove
             </button>
           )}

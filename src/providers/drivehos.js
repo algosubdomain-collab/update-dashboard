@@ -12,7 +12,7 @@
 import { mapLimit } from './pool.js';
 import { fetchAllPages } from './paginate.js';
 import { ProviderError, backoff, request } from './http.js';
-import { coord, driverShape, flag, isActive, normStatus, num, str, toIso, toMinutes } from './normalize.js';
+import { coord, driverShape, flag, isActive, issuesFromTexts, normStatus, num, str, toIso, toMinutes } from './normalize.js';
 
 const BASE = process.env.DRIVEHOS_BASE_URL || 'https://api.drivehos.app/api';
 const PAGE = 100;
@@ -32,7 +32,8 @@ const FORM_CONCURRENCY = 2;
 
 const isActiveEvent = (ev) => String(ev?.event_status ?? '').toUpperCase() === 'ACTIVE';
 
-// /v1/events javobi (kunlar ro'yxati) → { changedAt, trailer, shipping, from }.
+// /v1/events javobi (kunlar ro'yxati) → { changedAt, trailer, shipping, from,
+// location, lat, lon }. location — forma o'zgargan paytdagi joy.
 export function parseForm(days) {
   const events = (days ?? [])
     .flatMap((day) => day?.events ?? [])
@@ -46,16 +47,49 @@ export function parseForm(days) {
     const form = [str(ev.trailers), str(ev.shipping_docs)];
     // Forma ma'lumoti yo'q hodisalar (certify va h.k.) solishtirishga kirmaydi.
     if (!form[0] && !form[1]) continue;
-    if (prev && (form[0] !== prev[0] || form[1] !== prev[1])) change = { t, from: prev };
+    if (prev && (form[0] !== prev[0] || form[1] !== prev[1])) change = { t, ev, from: prev };
     prev = form;
   }
+  const where = change ? coord(change.ev.lat, change.ev.lon) : { lat: null, lon: null };
   return {
     changedAt: change ? new Date(change.t).toISOString() : null,
     trailer: prev?.[0] || null,
     shipping: prev?.[1] || null,
     from: change ? { trailer: change.from[0] || null, shipping: change.from[1] || null } : null,
+    location: change ? str(change.ev.manual_location || change.ev.calculated_location) || null : null,
+    lat: where.lat,
+    lon: where.lon,
   };
 }
+
+// Log sahifasidagi error va violation'lar (so'nggi 8 kun), turi bo'yicha
+// guruhlangan — xatolar popover'i uchun ("2× Odometer jump — 30 Sep, 28 Sep").
+const ISSUES_LOOKBACK_MS = 8 * 86400_000;
+
+export function parseIssues(days, { now = Date.now() } = {}) {
+  const from = new Date(now - ISSUES_LOOKBACK_MS).toISOString().slice(0, 10);
+  const out = { errors: new Map(), violations: new Map() };
+  for (const day of days ?? []) {
+    if (day?.date && day.date < from) continue;
+    for (const [kind, list, typeKey] of [
+      ['errors', day?.errors, 'error_type'],
+      ['violations', day?.violations, 'violation_type'],
+    ]) {
+      for (const it of list ?? []) {
+        const type = str(it?.[typeKey]) || 'UNKNOWN';
+        const g = out[kind].get(type) ?? { type, text: str(it?.description) || humanize(type), count: 0, dates: [] };
+        g.count += 1;
+        const date = str(it?.work_date || day?.date);
+        if (date && !g.dates.includes(date)) g.dates.push(date);
+        out[kind].set(type, g);
+      }
+    }
+  }
+  const sorted = (m) => [...m.values()].map((g) => ({ ...g, dates: g.dates.sort().reverse() })).sort((a, b) => b.count - a.count);
+  return { errors: sorted(out.errors), violations: sorted(out.violations) };
+}
+
+const humanize = (t) => t.toLowerCase().replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
 
 // Token egasi (JWT user_id/sub) — token yangilansa ham o'zgarmaydi; keshni
 // akkaunt bo'yicha ajratish uchun (bir serverda bir nechta foydalanuvchi).
@@ -76,11 +110,12 @@ export function createDriveHos({ id, name, site, tenantId, base = BASE, sleep = 
   const formQueue = new Map(); // kalit → { ctx, driverId, companyId }
   let formFilling = null;
 
+  // Bitta so'rovdan ikki narsa: log formasi va guruhlangan xatolar.
   async function lookupForm(ctx, driverId, companyId) {
     const end = new Date(now());
     const start = new Date(end.getTime() - FORM_LOOKBACK_MS);
     const data = await api(ctx, `/v1/events?driver_id=${encodeURIComponent(driverId)}&start_date=${start.toISOString()}&end_date=${end.toISOString()}`, { companyId });
-    return parseForm(data?.events);
+    return { form: parseForm(data?.events), issues: parseIssues(data?.events, { now: end.getTime() }) };
   }
 
   function fillForms() {
@@ -295,7 +330,10 @@ export function createDriveHos({ id, name, site, tenantId, base = BASE, sleep = 
             const active = !d.lastUpdate || Date.parse(d.lastUpdate) >= activeCutoff;
             const key = `${acct}:${d.driverId}`;
             const cached = forms.get(key);
-            d.formChange = cached ? cached.value ?? { changedAt: null, trailer: null, shipping: null, from: null, error: true } : active ? { pending: true } : null;
+            d.formChange = cached ? cached.value?.form ?? { changedAt: null, trailer: null, shipping: null, from: null, error: true } : active ? { pending: true } : null;
+            // Guruhlangan xatolar (sanalari bilan) log'dan kelguncha — hos/list
+            // dagi joriy ro'yxat (sanasiz) ko'rsatiladi, katak bo'sh qolmasin.
+            d.issues = cached?.value?.issues ?? issuesFromTexts(row.errors?.map(text), row.violations?.map(text));
             if (active && (!cached || now() - cached.at >= FORM_TTL_MS)) formQueue.set(key, { ctx, driverId: d.driverId, companyId: c.id });
             drivers.push(d);
           }

@@ -14,7 +14,7 @@ import * as store from './store/index.js';
 const COOKIE = 'sid';
 const MAX_BULK = 5000;
 
-export function createApp({ fleet, dot, publicDir = 'public', fetch = globalThis.fetch }) {
+export function createApp({ fleet, dot, schedule = () => ({ intervalSec: null, nextAt: null }), publicDir = 'public', fetch = globalThis.fetch }) {
   const router = createRouter();
   const serveStatic = createStatic(publicDir);
   const loginLimiter = createRateLimiter({ max: 10, windowMs: 15 * 60_000 });
@@ -164,7 +164,16 @@ export function createApp({ fleet, dot, publicDir = 'public', fetch = globalThis
     const provider = await resolveProvider(user, url.searchParams.get('provider'));
     const p = getProvider(provider);
     const view = await fleet.get(user.login, provider);
-    return { provider, supportsCertify: Boolean(p?.certifyDriver), ...view };
+    return { provider, supportsCertify: Boolean(p?.certifyDriver), schedule: schedule(), ...view };
+  });
+
+  // "Latest" — platformadan hozir yig'ish (fon jadvalini kutmasdan).
+  route('POST', '/api/drivers/refresh', 'user', async ({ req, user }) => {
+    const body = await readJson(req);
+    const provider = await resolveProvider(user, body.provider);
+    const p = getProvider(provider);
+    const view = await fleet.refreshNow(user.login, provider);
+    return { provider, supportsCertify: Boolean(p?.certifyDriver), schedule: schedule(), ...view };
   });
 
   route('POST', '/api/certify', 'user', async ({ req, user }) => {

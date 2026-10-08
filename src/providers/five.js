@@ -8,7 +8,7 @@
 import { fetchAllPages } from './paginate.js';
 import { ProviderError, request } from './http.js';
 import { mapLimit } from './pool.js';
-import { coord, driverShape, flag, isActive, normStatus, num, str, toIso, toMinutes } from './normalize.js';
+import { coord, driverShape, flag, isActive, issuesFromTexts, normStatus, num, str, toIso, toMinutes } from './normalize.js';
 
 const BASE = process.env.FIVE_BASE_URL || 'https://api.fiveeld.com/api';
 const PAGE = 100;
@@ -112,6 +112,9 @@ export function createFive({ base = BASE, sleep } = {}) {
       eldConnected: flag(t.eld_connection),
       lastUpdate: toIso(t.date || row.timers?.date),
     });
+    // Five sana bermaydi: warnings → "errors", violations → "violations".
+    const txt = (v) => (typeof v === 'string' ? v : v?.value ?? v?.message ?? v?.type ?? v?.key ?? null);
+    d.issues = issuesFromTexts((row.warnings ?? []).map(txt), (row.violations ?? []).map(txt));
     d.logUrl = logUrl(d);
     return d;
   }

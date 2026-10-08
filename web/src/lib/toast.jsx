@@ -9,7 +9,12 @@ export function ToastProvider({ children }) {
   const [items, setItems] = useState([]);
   const seq = useRef(0);
 
-  const dismiss = useCallback((id) => setItems((xs) => xs.filter((t) => t.id !== id)), []);
+  // Avval "chiqish" animatsiyasi, keyin DOM'dan olib tashlash — toast
+  // keskin yo'qolmasin.
+  const dismiss = useCallback((id) => {
+    setItems((xs) => xs.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
+    setTimeout(() => setItems((xs) => xs.filter((t) => t.id !== id)), 200);
+  }, []);
 
   const show = useCallback(
     (text, { tone = 'info', action, ms = tone === 'error' ? 7000 : 4000 } = {}) => {
@@ -30,7 +35,7 @@ export function ToastProvider({ children }) {
       {/* role=status — ekran o'qigichlar xabarni o'qiydi, fokus o'g'irlanmaydi. */}
       <div className="toasts" role="status" aria-live="polite">
         {items.map((t) => (
-          <div key={t.id} className={`toast toast-${t.tone}`}>
+          <div key={t.id} className={`toast toast-${t.tone} ${t.leaving ? 'is-leaving' : ''}`}>
             <span>{t.text}</span>
             {t.action && (
               <button

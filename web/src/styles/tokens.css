@@ -1,92 +1,141 @@
-/* Tokenlar oilasi. Yangi px qiymat o'ylab topilmaydi — shu yerdan tanlanadi.
-   Rang faqat ma'no uchun: lime — yaxshi/asosiy, amber — ogohlantirish/tasdiq,
-   red — shoshilinch, violet/sky/slate — toifalar. */
+/* Tokenlar — yagona manba. Yangi px qiymat o'ylab topilmaydi, shu yerdan tanlanadi.
+   Falsafa: sokin qora "kanvas", chuqurlik soyadan emas — 1px chiziqlar va
+   sirt pog'onalaridan. Rang FAQAT ma'no uchun (holat, shoshilinchlik). */
 
 :root {
   color-scheme: dark;
 
-  /* Fon va chiziqlar — sokin qora, yupqa chiziqlar */
-  --bg: #0b0c0e;
-  --surface: #111316;
-  --surface-2: #16191d;
-  --surface-3: #1c2025;
-  --line: #22262c;
-  --line-strong: #2f343b;
+  /* ── Sirtlar ── */
+  --canvas: #0e1113; /* sahifa */
+  --card: #16191c;
+  --card-2: #1c2023; /* hover / menyular */
+  --card-3: #23282c; /* bosilgan / treklar */
+  --line: #272c31; /* barcha chegara va ajratgichlar */
 
-  /* Matn */
-  --text: #e7e9ec;
-  --text-2: #a4aab3;
-  --text-3: #6c737d;
+  /* ── Matn ── */
+  --ink: #eef1f3;
+  --ink-2: #9aa3ab;
+  --ink-3: #6b737b; /* sokin: yorliqlar, indekslar */
 
-  /* Ma'noli ranglar */
-  --lime: #a3e635;
-  --amber: #fbbf24;
-  --red: #f87171;
-  --violet: #a78bfa;
-  --sky: #38bdf8;
-  --slate: #94a3b8;
+  /* ── Ma'noli ranglar ── */
+  --lime: #9fd356; /* yaxshi / bajarildi */
+  --amber: #e0913f; /* ogohlantirish */
+  --red: #e0646d; /* shoshilinch / xato */
+  --violet: #9b8cf0;
+  --sky: #5aa9e6; /* havola / ma'lumot */
+  --slate: #8894a1;
 
-  /* Ularning sokin fonlari (yorliqlar uchun) */
-  --lime-bg: rgb(163 230 53 / 0.12);
-  --amber-bg: rgb(251 191 36 / 0.12);
-  --red-bg: rgb(248 113 113 / 0.14);
-  --violet-bg: rgb(167 139 250 / 0.14);
-  --sky-bg: rgb(56 189 248 / 0.13);
-  --slate-bg: rgb(148 163 184 / 0.13);
-
-  --on-accent: #0b0c0e;
-  --focus: var(--sky);
-
-  /* Radiuslar */
-  --r-1: 4px;
-  --r-2: 6px;
-  --r-3: 10px;
+  /* ── Radius — Notion kabi kichik; pill (999px) faqat haqiqiy doiralar uchun ── */
+  --r-lg: 11px;
+  --r-md: 8px;
+  --r-sm: 7px;
+  --r-opt: 6px; /* menyu variantlari */
+  --r-pop: 8px; /* popover */
+  --r-tag: 6px; /* select yorliqlari, badge, chip — yumshoq, lekin pill emas */
   --r-pill: 999px;
 
-  /* Matn pog'onalari */
-  --fs-1: 11px;
-  --fs-2: 12px;
-  --fs-3: 13px;
-  --fs-4: 15px;
-  --fs-5: 20px;
+  /* ── Matn shkalasi (bitta oila, boshqa o'lcham yo'q) ── */
+  --t-badge: 9.5px;
+  --t-label: 10.5px; /* ustun sarlavhalari, chip'lar */
+  --t-num: 11.5px; /* ikkinchi darajali raqamlar */
+  --t-help: 12.5px; /* yordamchi matn, tugmalar */
+  --t-cell: 13px; /* katak matni */
+  --t-em: 15px; /* urg'uli raqamlar, sarlavhalar */
+
+  /* ── Bo'shliq (4px panjara) ── */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 22px;
+
+  /* ── Jadval ── */
+  --row: 52px;
+  --head: 36px;
+  --ring-size: 44px;
+  --ring-stroke: 3.5px;
+
+  /* ── Shriftlar ── */
+  --font: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  --mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* ── Soya — deyarli yo'q; faqat menyularda chuqur yumshoq soya ── */
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.28);
+  --shadow-menu: 0 12px 30px -10px rgb(0 0 0 / 0.6);
+
+  /* ── Harakat ── */
+  --t-hover: 0.1s;
+  --t-menu: 0.13s;
+  --t-pop: 0.14s;
+  --t-caret: 0.15s;
+  --t-badge-in: 0.22s;
+  --t-progress: 0.5s;
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.2, 0.8, 0.3, 1);
+  --ease-std: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ── Eski nomlar → yangi tokenlar (sahifalar CSS'i shular bilan yozilgan) ── */
+  --bg: var(--canvas);
+  --surface: var(--card);
+  --surface-2: var(--card-2);
+  --surface-3: var(--card-3);
+  --surface-glass: var(--card);
+  --line-strong: var(--line);
+  --text: var(--ink);
+  --text-2: var(--ink-2);
+  --text-3: var(--ink-3);
+  --lime-bg: color-mix(in srgb, var(--lime) 14%, transparent);
+  --amber-bg: color-mix(in srgb, var(--amber) 14%, transparent);
+  --red-bg: color-mix(in srgb, var(--red) 14%, transparent);
+  --violet-bg: color-mix(in srgb, var(--violet) 14%, transparent);
+  --sky-bg: color-mix(in srgb, var(--sky) 14%, transparent);
+  --slate-bg: color-mix(in srgb, var(--slate) 14%, transparent);
+  --on-accent: var(--canvas);
+  --focus: var(--sky);
+  --r-1: var(--r-sm);
+  --r-2: var(--r-sm);
+  --r-3: var(--r-md);
+  --r-4: var(--r-lg);
+  --fs-1: var(--t-label);
+  --fs-2: var(--t-help);
+  --fs-3: var(--t-cell);
+  --fs-4: var(--t-em);
+  --fs-5: var(--t-em);
+  --fs-6: var(--t-em);
   --lh-tight: 1.2;
   --lh: 1.45;
-
-  /* Bo'shliqlar — 4px panjara */
-  --sp-1: 4px;
-  --sp-2: 8px;
-  --sp-3: 12px;
-  --sp-4: 16px;
-  --sp-5: 20px;
+  --sp-1: var(--s-1);
+  --sp-2: var(--s-2);
+  --sp-3: var(--s-3);
+  --sp-4: var(--s-4);
+  --sp-5: var(--s-5);
   --sp-6: 24px;
   --sp-8: 32px;
   --sp-10: 40px;
-
-  /* Jadval o'lchamlari */
-  --row-h: 44px;
-  --head-h: 36px;
-  --col-num: 40px;
-  --col-check: 36px;
-  --col-driver: 300px;
-  --col-unit: 80px;
-  --col-resp: 140px;
-  --col-loc: 220px;
-  --col-status: 170px;
-  --col-form: 300px;
-  --col-drive: 90px;
-  --col-cert: 130px;
-  --ring: 30px;
-
-  --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
-
-  --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.45), 0 0 0 1px var(--line-strong);
-  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
-  --dur: 140ms;
+  --sp-12: 48px;
+  --row-h: var(--row);
+  --head-h: var(--head);
+  --ring: var(--ring-size);
+  --topbar-h: 48px;
+  --shadow-1: var(--shadow);
+  --shadow-card: none;
+  --shadow-pop: 0 0 0 1px var(--line), var(--shadow-menu);
+  --focus-ring: none;
+  --ease: var(--ease-out);
+  --ease-in-out: var(--ease-std);
+  --dur-1: var(--t-hover);
+  --dur: var(--t-hover);
+  --dur-2: var(--t-menu);
+  --dur-3: var(--t-badge-in);
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --dur: 0ms;
+    --t-hover: 0s;
+    --t-menu: 0s;
+    --t-pop: 0s;
+    --t-caret: 0s;
+    --t-badge-in: 0s;
+    --t-progress: 0s;
   }
 }

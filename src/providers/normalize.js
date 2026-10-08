@@ -138,6 +138,23 @@ export function str(v) {
   return String(v).trim();
 }
 
+// Sanasiz matn ro'yxatlaridan xatolar guruhi (manba sana bermasa):
+// bir xil matn bitta qatorga yig'iladi — "2× Odometer jump".
+export function issuesFromTexts(errors = [], violations = []) {
+  const group = (list) => {
+    const m = new Map();
+    for (const raw of list ?? []) {
+      const text = str(raw);
+      if (!text) continue;
+      const g = m.get(text) ?? { type: text, text, count: 0, dates: [] };
+      g.count += 1;
+      m.set(text, g);
+    }
+    return [...m.values()].sort((a, b) => b.count - a.count);
+  };
+  return { errors: group(errors), violations: group(violations) };
+}
+
 // Yagona ko'rinishning to'liq shabloni — adapter biror maydonni unutsa ham
 // interfeys undefined bilan emas, aniq null bilan ishlaydi.
 export function driverShape(d) {
@@ -170,5 +187,7 @@ export function driverShape(d) {
     // { changedAt, trailer, shipping, from } — tayyor (changedAt null bo'lsa
     // oxirgi 10 kunda o'zgarmagan).
     formChange: d.formChange ?? null,
+    // Log xatolari: { errors: [{type, text, count, dates}], violations: [...] }.
+    issues: d.issues ?? null,
   };
 }

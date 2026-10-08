@@ -37,6 +37,7 @@ export function createFleetCache({
         return e;
       }
       const started = now();
+      e.startedAt = new Date(started).toISOString();
       try {
         const { drivers, errors, restricted } = await provider.fetchDrivers({
           token: conn.token,
@@ -51,6 +52,7 @@ export function createFleetCache({
         e.errors = errors ?? [];
         e.restricted = restricted ?? [];
         e.fetchedAt = new Date(now()).toISOString();
+        e.durationMs = now() - started;
         e.error = null;
         e.authError = false;
         log(`[fleet] ${key}: ${drivers.length} haydovchi, ${e.errors.length} xato, ${now() - started} ms`);
@@ -83,11 +85,26 @@ export function createFleetCache({
       error: e.error,
       authError: e.authError,
       loading: Boolean(e.inflight) && !e.drivers,
+      // Hozir platformadan yig'ilyaptimi va oxirgi yig'ish qancha davom etgani —
+      // interfeysda "Latest" tugmasi holati va kutish vaqti uchun.
+      refreshing: Boolean(e.inflight),
+      startedAt: e.startedAt ?? null,
+      durationMs: e.durationMs ?? null,
     };
   }
 
   return {
     refresh,
+    isRefreshing: (login, providerId) => Boolean(entries.get(`${login}:${providerId}`)?.inflight),
+    // Qo'lda "Latest": yig'ish ketayotgan bo'lsa unga qo'shiladi (ikki marta
+    // so'ramaydi); hozirgina yangilangan bo'lsa (minGapMs) platformaga qayta
+    // bormaydi — tugmani ketma-ket bosish platforma kvotasini yemasin.
+    async refreshNow(login, providerId, { minGapMs = 15_000 } = {}) {
+      const e = entry(`${login}:${providerId}`);
+      const fresh = e.fetchedAt && now() - Date.parse(e.fetchedAt) < minGapMs;
+      if (e.inflight || !fresh) await refresh(login, providerId);
+      return { ...view(e), skipped: Boolean(fresh && !e.inflight) };
+    },
     async get(login, providerId) {
       const e = entry(`${login}:${providerId}`);
       // Hali hech narsa yig'ilmagan bo'lsa — kutamiz; aks holda keshdan.

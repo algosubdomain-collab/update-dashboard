@@ -103,7 +103,10 @@ export default function AssignMenu({ me, responsibles, shownCount, allCount, fil
           ) : (
             responsibles.map((r, i) => (
               <button key={r.label} type="button" role="menuitem" data-item data-focus={i === 0 ? 'true' : undefined} className={`menu-item ${i === active ? 'is-active' : ''}`} onMouseEnter={() => setActive(i)} onClick={() => pick(r.label)}>
-                <span className={`pill pill-${r.color}`}>{r.label}</span>
+                <span className={`opt-pill c-${r.color}`}>
+                  <span className="opt-dot" aria-hidden="true" />
+                  <span>{r.label}</span>
+                </span>
                 <span className="muted small">→ {count}</span>
               </button>
             ))

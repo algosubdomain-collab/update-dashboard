@@ -1,0 +1,450 @@
+/* Umumiy sayqal: tugmalar, maydonlar, checkbox, menyular, toast, modal.
+   Chuqurlik soyadan emas — 1px chiziq va sirt pog'onalaridan. Harakat faqat
+   opacity va transform'da (layout siljimaydi). Jadvalga oid hammasi board.css da. */
+
+html,
+body {
+  font-family: var(--font);
+  font-size: var(--t-cell);
+  font-feature-settings: 'cv11', 'ss01';
+  background: var(--canvas);
+  color: var(--ink);
+}
+::selection {
+  background: color-mix(in srgb, var(--sky) 30%, transparent);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--card-3) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--card-3);
+  border-radius: var(--r-pill);
+  border: 3px solid var(--canvas);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Raqam, ID va vaqt — doim JetBrains Mono, tabular: raqamlar sakramaydi. */
+.num,
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Fokus — 2px kontur, ma'noga mos rangda (standart: sky) */
+:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+.btn-primary:focus-visible,
+input[type='checkbox']:focus-visible {
+  outline-color: var(--lime);
+}
+.btn-danger:focus-visible,
+.btn-danger-ghost:focus-visible {
+  outline-color: var(--red);
+}
+.btn-amber:focus-visible {
+  outline-color: var(--amber);
+}
+
+.page-title {
+  font-size: var(--t-em);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* ── Tugmalar ──────────────────────────────────────────────────────────── */
+.btn {
+  min-height: 32px;
+  padding: 0 var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--card);
+  color: var(--ink);
+  font-size: var(--t-cell);
+  font-weight: 500;
+  box-shadow: none;
+  transition:
+    background var(--t-hover) var(--ease-out),
+    border-color var(--t-hover) var(--ease-out),
+    color var(--t-hover) var(--ease-out),
+    transform var(--t-hover) var(--ease-out);
+}
+.btn:hover:not(:disabled) {
+  background: var(--card-2);
+}
+.btn:active:not(:disabled) {
+  background: var(--card-3);
+  transform: scale(0.98);
+}
+.btn-sm {
+  min-height: 32px;
+  font-size: var(--t-cell);
+}
+.btn-xs {
+  min-height: 28px;
+  padding: 0 var(--s-2);
+  font-size: var(--t-help);
+}
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-2);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--card-2);
+  color: var(--ink);
+}
+.btn-primary {
+  background: var(--lime);
+  border-color: var(--lime);
+  color: var(--canvas);
+  font-weight: 600;
+}
+.btn-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--lime) 88%, white);
+  filter: none;
+}
+.btn-primary:disabled {
+  background: var(--card-2);
+  border-color: var(--line);
+  color: var(--ink-3);
+}
+.btn-amber {
+  background: color-mix(in srgb, var(--amber) 16%, var(--canvas));
+  border-color: color-mix(in srgb, var(--amber) 45%, transparent);
+  color: var(--amber);
+}
+.btn-amber:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--amber) 22%, var(--canvas));
+}
+.btn-danger {
+  background: color-mix(in srgb, var(--red) 16%, var(--canvas));
+  border-color: color-mix(in srgb, var(--red) 45%, transparent);
+  color: var(--red);
+}
+.btn-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red) 22%, var(--canvas));
+}
+.btn-danger-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--red);
+}
+
+/* ── Maydonlar ─────────────────────────────────────────────────────────── */
+input:not([type='checkbox']),
+select,
+textarea {
+  min-height: 30px;
+  padding: var(--s-1) var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--card);
+  color: var(--ink);
+  font-size: var(--t-cell);
+  transition: border-color var(--t-hover) var(--ease-out), background var(--t-hover) var(--ease-out);
+}
+input:not([type='checkbox']):hover,
+select:hover,
+textarea:hover {
+  background: var(--card-2);
+}
+input:not([type='checkbox']):focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: -1px;
+  border-color: transparent;
+  background: var(--card);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--ink-3);
+}
+.search input {
+  padding-left: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b737b' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 10px 50%;
+}
+
+/* Checkbox — dumaloq, haqiqiy <input type="checkbox"> */
+input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-grid;
+  place-content: center;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1.5px solid color-mix(in srgb, var(--ink-3) 70%, transparent);
+  border-radius: var(--r-pill);
+  background: transparent;
+  cursor: pointer;
+  vertical-align: middle;
+  transition:
+    background var(--t-hover) var(--ease-out),
+    border-color var(--t-hover) var(--ease-out),
+    transform var(--t-hover) var(--ease-out);
+}
+input[type='checkbox']:hover {
+  border-color: var(--ink-2);
+}
+input[type='checkbox']:active {
+  transform: scale(0.9);
+}
+input[type='checkbox']::before {
+  content: '';
+  width: 8px;
+  height: 4.5px;
+  margin-top: -2px;
+  border-left: 2px solid var(--canvas);
+  border-bottom: 2px solid var(--canvas);
+  transform: rotate(-45deg) scale(0);
+  transition: transform var(--t-menu) var(--ease-spring);
+}
+input[type='checkbox']:checked,
+input[type='checkbox']:indeterminate {
+  background: var(--lime);
+  border-color: var(--lime);
+}
+input[type='checkbox']:checked::before {
+  transform: rotate(-45deg) scale(1);
+}
+input[type='checkbox']:indeterminate::before {
+  width: 8px;
+  height: 0;
+  margin: 0;
+  border-left: 0;
+  transform: none;
+}
+input[type='checkbox']:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* ── Yuqori panel ──────────────────────────────────────────────────────── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  min-height: var(--topbar-h);
+  padding: var(--s-2) var(--s-4);
+  background: var(--canvas);
+  border-bottom: 1px solid var(--line);
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-weight: 650;
+  font-size: var(--t-cell);
+}
+.brand-mark {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.who {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-help);
+}
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-pill);
+  background: var(--card-3);
+  color: var(--ink);
+  font-size: var(--t-label);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* ── Kartalar ──────────────────────────────────────────────────────────── */
+.card {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--card);
+  box-shadow: none;
+}
+.list-row {
+  border-top-color: var(--line);
+  transition: background var(--t-hover) var(--ease-out);
+}
+.list-row:hover {
+  background: var(--card-2);
+}
+
+/* ── Menyular — portal, --card-2, 1px chiziq, 12px, chuqur yumshoq soya ── */
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+.menu {
+  padding: var(--s-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--card-2);
+  box-shadow: var(--shadow-menu);
+  transform-origin: top left;
+  animation: menu-in var(--t-menu) var(--ease-out) both;
+}
+.menu.is-above {
+  transform-origin: bottom left;
+}
+.menu-anchored {
+  transform-origin: top right;
+}
+.menu-left {
+  transform-origin: top left;
+}
+.menu-item {
+  min-height: 30px;
+  border-radius: var(--r-opt);
+  font-size: var(--t-cell);
+  transition: background var(--t-hover) var(--ease-out);
+}
+.menu-item.is-active,
+.menu-item:hover {
+  background: var(--card-3);
+  outline: none;
+}
+.menu-sep {
+  height: 1px;
+  margin: var(--s-1) var(--s-1);
+  background: var(--line);
+  list-style: none;
+}
+.seg {
+  border-radius: var(--r-sm);
+}
+
+/* ── Toast (faqat xatolarda) ───────────────────────────────────────────── */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.toast {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--card-2);
+  box-shadow: var(--shadow-menu);
+  font-size: var(--t-help);
+  animation: toast-in var(--t-pop) var(--ease-out) both;
+}
+.toast-error {
+  border-color: color-mix(in srgb, var(--red) 45%, transparent);
+}
+.toast.is-leaving {
+  animation: toast-out var(--t-menu) var(--ease-out) both;
+}
+
+/* ── Modal / tasdiq ────────────────────────────────────────────────────── */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+.overlay {
+  background: rgb(0 0 0 / 0.5);
+  animation: fade-in var(--t-menu) var(--ease-out) both;
+}
+.confirm-card {
+  border-radius: var(--r-lg);
+  background: var(--card-2);
+  box-shadow: var(--shadow-menu);
+  animation: menu-in var(--t-pop) var(--ease-out) both;
+}
+
+/* ── Settings ──────────────────────────────────────────────────────────── */
+.snav {
+  border-radius: var(--r-sm);
+  transition: background var(--t-hover) var(--ease-out), color var(--t-hover) var(--ease-out);
+}
+.snav:hover {
+  background: var(--card-2);
+}
+.snav.is-on {
+  background: var(--card-3);
+  box-shadow: none;
+}
+.snav-hint {
+  font-size: var(--t-label);
+}
+.savebar {
+  background: var(--canvas);
+  border-top: 1px solid var(--line);
+}
+.chip {
+  border: 1px solid var(--line);
+  background: var(--card-2);
+  box-shadow: none;
+  font-size: var(--t-label);
+}
+.chip button:hover {
+  color: var(--red);
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+}
+input.board-name:not(:hover):not(:focus-visible) {
+  background: transparent;
+  border-color: transparent;
+}
+.req-hit {
+  transition: background var(--t-hover) var(--ease-out);
+}
+.req-hit:hover {
+  background: var(--card-2);
+}
+.swatch {
+  border-radius: var(--r-pill);
+  width: 18px;
+  height: 18px;
+}
+
+/* ── Login ─────────────────────────────────────────────────────────────── */
+.auth-card {
+  padding: var(--sp-8);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+.auth-brand {
+  display: grid;
+  justify-items: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-2);
+  text-align: center;
+}
+.auth-brand .brand-mark {
+  width: 36px;
+  height: 36px;
+}
+.auth-brand p {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: var(--t-help);
+}

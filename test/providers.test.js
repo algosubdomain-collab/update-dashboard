@@ -214,15 +214,16 @@ test('parseTokenInput: JSON (access+refresh), xom token, "Bearer", qo\'shtirnoql
 
 test('parseForm: oxirgi o\'zgarish, joriy qiymat, formasiz hodisalar hisobga olinmaydi', async () => {
   const { parseForm } = await import('../src/providers/drivehos.js');
-  const ev = (t, trailers, shipping_docs, status = 'ACTIVE') => ({ event_start_time: t, trailers, shipping_docs, event_status: status });
+  const ev = (t, trailers, shipping_docs, status = 'ACTIVE') => ({ event_start_time: t, trailers, shipping_docs, event_status: status, lat: 35.1, lon: -90.05, calculated_location: 'Memphis, TN' });
   const r = parseForm([
     { date: '2026-10-01', events: [ev('2026-10-01T08:00:00Z', 'T1', 'B1'), ev('2026-10-01T09:00:00Z', '', '')] },
     { date: '2026-10-03', events: [ev('2026-10-03T10:00:00Z', 'T2', 'B1'), ev('2026-10-03T11:00:00Z', 'T9', 'B9', 'INACTIVE')] },
     { date: '2026-10-04', events: [ev('2026-10-04T10:00:00Z', 'T2', 'B1')] },
   ]);
-  assert.deepEqual(r, { changedAt: '2026-10-03T10:00:00.000Z', trailer: 'T2', shipping: 'B1', from: { trailer: 'T1', shipping: 'B1' } });
-  assert.deepEqual(parseForm([{ events: [ev('2026-10-01T08:00:00Z', 'T1', 'B1')] }]), { changedAt: null, trailer: 'T1', shipping: 'B1', from: null });
-  assert.deepEqual(parseForm([]), { changedAt: null, trailer: null, shipping: null, from: null });
+  assert.deepEqual(r, { changedAt: '2026-10-03T10:00:00.000Z', trailer: 'T2', shipping: 'B1', from: { trailer: 'T1', shipping: 'B1' }, location: 'Memphis, TN', lat: 35.1, lon: -90.05 });
+  const none = { location: null, lat: null, lon: null };
+  assert.deepEqual(parseForm([{ events: [ev('2026-10-01T08:00:00Z', 'T1', 'B1')] }]), { changedAt: null, trailer: 'T1', shipping: 'B1', from: null, ...none });
+  assert.deepEqual(parseForm([]), { changedAt: null, trailer: null, shipping: null, from: null, ...none });
 });
 
 test('DriveHOS: forma fonda yig\'iladi — avval pending, keyin qiymat; faqat faol haydovchilar', async () => {
@@ -250,4 +251,27 @@ test('DriveHOS: forma fonda yig\'iladi — avval pending, keyin qiymat; faqat fa
   assert.equal(second.drivers.find((d) => d.driverId === 'd1').formChange.trailer, 'TR9');
   await p.whenFormsIdle();
   assert.deepEqual(asked, ['d1']); // 15 daqiqa keshda — qayta so'ralmaydi
+});
+
+test("parseIssues: tur bo'yicha guruhlash, sanalar, 8 kundan eskisi tashlanadi", async () => {
+  const { parseIssues } = await import('../src/providers/drivehos.js');
+  const now = Date.parse('2026-10-06T12:00:00Z');
+  const r = parseIssues(
+    [
+      { date: '2026-09-20', errors: [{ error_type: 'ODOMETER_JUMP', description: 'Odometer jump' }] },
+      { date: '2026-09-30', errors: [{ error_type: 'ODOMETER_JUMP', description: 'Odometer jump' }], violations: [{ violation_type: 'DRIVING_11', description: '11h' }] },
+      { date: '2026-10-02', errors: [{ error_type: 'ODOMETER_JUMP', description: 'Odometer jump', work_date: '2026-10-01' }, { error_type: 'NO_DOCS' }] },
+    ],
+    { now },
+  );
+  assert.deepEqual(r.errors[0], { type: 'ODOMETER_JUMP', text: 'Odometer jump', count: 2, dates: ['2026-10-01', '2026-09-30'] });
+  assert.equal(r.errors[1].text, 'No docs');
+  assert.equal(r.violations[0].count, 1);
+});
+
+test('issuesFromTexts: bir xil matn bitta guruhga', async () => {
+  const { issuesFromTexts } = await import('../src/providers/normalize.js');
+  const r = issuesFromTexts(['A', 'B', 'A', ''], [null]);
+  assert.deepEqual(r.errors.map((g) => [g.text, g.count]), [['A', 2], ['B', 1]]);
+  assert.deepEqual(r.violations, []);
 });

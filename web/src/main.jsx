@@ -8,8 +8,12 @@ import Dashboard from './pages/Dashboard.jsx';
 import Login from './pages/Login.jsx';
 import Owner from './pages/Owner.jsx';
 import Settings from './pages/Settings.jsx';
+import '@fontsource-variable/inter';
+import '@fontsource-variable/jetbrains-mono';
 import './styles/tokens.css';
 import './styles/app.css';
+import './styles/polish.css';
+import './styles/board.css';
 
 function App() {
   // undefined — hali bilmaymiz; null — kirmagan.

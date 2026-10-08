@@ -3,7 +3,7 @@ import { createApp } from './app.js';
 import { hashPassword } from './auth/password.js';
 import { config } from './config.js';
 import { dotService } from './dot/index.js';
-import { fleet, startBackgroundRefresh, stopBackgroundRefresh } from './fleet/index.js';
+import { fleet, schedule, startBackgroundRefresh, stopBackgroundRefresh } from './fleet/index.js';
 import * as store from './store/index.js';
 
 async function main() {
@@ -18,7 +18,7 @@ async function main() {
 
   await ensureAdmin();
 
-  const handle = createApp({ fleet, dot: dotService() });
+  const handle = createApp({ fleet, dot: dotService(), schedule });
   const server = createServer(handle);
   // Render proksisi ulanishlarni qayta ishlatadi; Node'ning standart 5 s
   // keep-alive'i proksinikidan qisqa bo'lsa, vaqti-vaqti bilan 502 chiqadi.

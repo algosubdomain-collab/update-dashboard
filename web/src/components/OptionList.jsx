@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 export const COLORS = ['lime', 'amber', 'red', 'violet', 'sky', 'slate'];
 
-// Nom + rang ro'yxati (Status, Profile Form, Responsible variantlari).
+// Nom + rang ro'yxati (Status, Responsible variantlari).
 // Rang kvadratchani bosib almashtiriladi.
 export default function OptionList({ title, hint, items, onChange }) {
   const [text, setText] = useState('');

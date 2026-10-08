@@ -34,8 +34,6 @@ export default function Connect({ user, onLogout }) {
     setError('');
     try {
       const r = await put(`/api/connections/${id}`, { token });
-      const s = r.summary ?? {};
-      toast.show(`Connected${s.companies !== undefined ? ` · ${s.companies} companies` : ''}${r.autoRefresh ? ' · auto-refresh on' : ''}`);
       setOpen(null);
       await load();
     } catch (err) {
@@ -47,7 +45,6 @@ export default function Connect({ user, onLogout }) {
 
   async function disconnect(id) {
     await del(`/api/connections/${id}`);
-    toast.show('Disconnected');
     load();
   }
 

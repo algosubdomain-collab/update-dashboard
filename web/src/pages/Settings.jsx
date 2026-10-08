@@ -10,7 +10,7 @@ import { useDashboard } from '../lib/useDashboard.js';
 import { useProvider } from '../lib/useProvider.js';
 
 const SECTIONS = [
-  { id: 'columns', label: 'Columns', hint: 'Status and Profile Form options' },
+  { id: 'columns', label: 'Columns', hint: 'Status options' },
   { id: 'responsible', label: 'Responsible', hint: 'People and your name' },
   { id: 'boards', label: 'Boards', hint: 'Group companies into views' },
   { id: 'requirements', label: 'Requirements', hint: 'Notes for companies and drivers' },
@@ -82,7 +82,6 @@ export default function Settings({ user, onLogout }) {
     try {
       const saved = await saveConfig(draft);
       setDraft(structuredClone(saved));
-      toast.show('Settings saved');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -140,9 +139,8 @@ export default function Settings({ user, onLogout }) {
           <section className="settings-panel" role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
             {!draft && <p className="muted">Loading…</p>}
             {draft && tab === 'columns' && (
-              <div className="cols-2">
-                <OptionList title="Status" items={draft.statuses} onChange={(statuses) => setDraft({ ...draft, statuses })} />
-                <OptionList title="Profile Form" items={draft.profileForms} onChange={(profileForms) => setDraft({ ...draft, profileForms })} />
+              <div className="stack narrow-col">
+                <OptionList title="Status" hint="Options for the Status column." items={draft.statuses} onChange={(statuses) => setDraft({ ...draft, statuses })} />
               </div>
             )}
             {draft && tab === 'responsible' && (

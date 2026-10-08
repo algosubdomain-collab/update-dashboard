@@ -1,13 +1,14 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { when } from '../lib/format.js';
-import { CertifyCell, CycleRing, DriveLeft, DriverName, FormMeta, LocationCell } from './cells.jsx';
+import { CertifyCell, CycleRing, DriveLeft, DriverInfo, FormMeta, LocationCell } from './cells.jsx';
 import Dropdown from './Dropdown.jsx';
 
-// Jadval. Chapdagi uch ustun (#, ✓, Driver) va kompaniya sarlavhasi gorizontal
+// Board — har bir qator CSS grid (ustunlar board.css dagi --cols da).
+// Chapdagi uch ustun (#, ✓, Driver) va kompaniya sarlavhasi gorizontal
 // siljitganda joyida qotadi — aks holda kimning qatori ekani bilinmay qoladi.
+// Sarlavha yorliqlari qisqa va to'liq: sarlavhada "…" bo'lmaydi.
 
-const COLS = ['num', 'check', 'driver', 'unit', 'resp', 'loc', 'status', 'form', 'drive', 'cert'];
-const EDGE = 48; // avto-scroll zonasi (px) — jadval cheti yaqinida
+const EDGE = 48; // avto-scroll zonasi (px) — board cheti yaqinida
 const SPEED = 14;
 
 export default function FleetTable({
@@ -17,70 +18,71 @@ export default function FleetTable({
   collapsed,
   onToggleGroup,
   onCheckClick,
-  header, // { state: 'none'|'some'|'all', armed, onClick, count }
+  selected, // Set — tanlangan qatorlar (ommaviy amallar uchun)
+  onSelectClick, // (key, shift) — # ustunini bosish
   onPatch,
-  notices,
-  onDismissNotice,
   certify, // { supported, states, onClick }
   onCopyName,
   onOpenSettings,
   visibleKeys,
-  isChecked,
   onDragCommit,
   notes,
   provider,
   boards,
   onToggleBoard,
 }) {
-  const drag = useDragSelect({ visibleKeys, isChecked, onCommit: onDragCommit });
+  const drag = useDragSelect({ visibleKeys, onCommit: onDragCommit });
+  const hasSel = selected.size > 0 || drag.active;
 
   return (
-    <div className={`table-scroll ${drag.active ? 'is-dragging' : ''}`} ref={drag.scrollRef} onPointerDown={drag.onPointerDown}>
-      <table className="fleet">
-        <colgroup>
-          {COLS.map((c) => (
-            <col key={c} className={`w-${c}`} />
-          ))}
-        </colgroup>
-        <thead>
-          <tr>
-            <th className="sticky c-num" scope="col">
-              #
-            </th>
-            <th className="sticky c-check" scope="col">
-              <HeaderCheck {...header} />
-            </th>
-            <th className="sticky c-driver" scope="col">
-              Driver
-            </th>
-            <th scope="col">Unit</th>
-            <th scope="col">Responsible</th>
-            <th scope="col">Current location</th>
-            <th scope="col">Status</th>
-            <th scope="col">Profile Form</th>
-            <th scope="col" className="c-right">
-              Drive left
-            </th>
-            <th scope="col">Certify</th>
-          </tr>
-        </thead>
+    <div className={`board ${drag.active ? 'is-dragging' : ''} ${hasSel ? 'has-sel' : ''}`} ref={drag.scrollRef} onPointerDown={drag.onPointerDown}>
+      <div className="board-inner" role="table" aria-label="Drivers" aria-rowcount={visibleKeys.length + 1}>
+        <div className="b-row b-head" role="row">
+          <span className="b-cell b-sticky c-num" role="columnheader">
+            #
+          </span>
+          {/* "Hammasini belgilash" ataylab yo'q — bitta tasodifiy bosish bilan
+              yuzlab qator belgilanib ketmasin. Ko'p qatorga amal — tanlov orqali. */}
+          <span className="b-cell b-sticky c-check" role="columnheader" aria-label="Checked" />
+          <span className="b-cell b-sticky c-driver" role="columnheader">
+            Driver
+          </span>
+          <span className="b-cell" role="columnheader">
+            Unit
+          </span>
+          <span className="b-cell" role="columnheader">
+            Responsible
+          </span>
+          <span className="b-cell" role="columnheader">
+            Status
+          </span>
+          <span className="b-cell" role="columnheader">
+            Current location
+          </span>
+          <span className="b-cell" role="columnheader">
+            Profile form
+          </span>
+          <span className="b-cell right" role="columnheader">
+            Drive left
+          </span>
+          <span className="b-cell" role="columnheader">
+            Certify
+          </span>
+        </div>
+
         {groups.map((g) => {
           const isCollapsed = collapsed.has(g.companyId);
           return (
-            <tbody key={g.companyId}>
-              <tr className="group-row">
-                <th colSpan={10} scope="colgroup" className="group-cell">
-                  <GroupHead
-                    group={g}
-                    collapsed={isCollapsed}
-                    onToggle={onToggleGroup}
-                    note={notes[`${provider}:${g.companyId}`]}
-                    boards={boards}
-                    onToggleBoard={onToggleBoard}
-                    onOpenSettings={onOpenSettings}
-                  />
-                </th>
-              </tr>
+            <div key={g.companyId} role="rowgroup">
+              <GroupHead
+                group={g}
+                collapsed={isCollapsed}
+                onToggle={onToggleGroup}
+                note={notes[`${provider}:${g.companyId}`]}
+                boards={boards}
+                onToggleBoard={onToggleBoard}
+                onOpenSettings={onOpenSettings}
+              />
               {!isCollapsed &&
                 g.drivers.map((d, i) => (
                   <Row
@@ -88,12 +90,11 @@ export default function FleetTable({
                     index={i + 1}
                     d={d}
                     row={rows[d.key]}
-                    preview={drag.preview && drag.preview.keys.has(d.key) ? drag.preview.state : undefined}
+                    selected={drag.preview ? drag.preview.has(d.key) : selected.has(d.key)}
+                    onSelectClick={onSelectClick}
                     config={config}
                     onCheckClick={onCheckClick}
                     onPatch={onPatch}
-                    notice={notices[d.key]}
-                    onDismissNotice={onDismissNotice}
                     certSupported={certify.supported}
                     certState={certify.states[d.key]}
                     onCertify={certify.onClick}
@@ -101,35 +102,35 @@ export default function FleetTable({
                     onOpenSettings={onOpenSettings}
                   />
                 ))}
-            </tbody>
+            </div>
           );
         })}
-      </table>
+      </div>
     </div>
   );
 }
 
-// ── Sudrab belgilash (Asana kabi) ──────────────────────────────────────────
+// ── Sudrab tanlash (Asana kabi) ────────────────────────────────────────────
 // # yoki ✓ ustunida sichqonchani bosib turib pastga/yuqoriga sudrang — oraliq
-// qatorlar birinchi qatorning YANGI holatiga keltiriladi. Jadval chetiga
-// yetganda o'zi siljiydi; bosib turgan holda g'ildirak bilan scroll qilsangiz
+// qatorlar TANLANADI (ommaviy amallar paneli chiqadi). Board cheti
+// yaqinida o'zi siljiydi; bosib turgan holda g'ildirak bilan scroll qilsangiz
 // ham tanlov kengayadi. Yig'ilgan guruhlardagi qatorlar tanlanmaydi (ular
 // visibleKeys da yo'q). Oddiy bosish avvalgidek ishlaydi (Shift ham).
-function useDragSelect({ visibleKeys, isChecked, onCommit }) {
+function useDragSelect({ visibleKeys, onCommit }) {
   const scrollRef = useRef(null);
   const st = useRef(null);
-  const [preview, setPreview] = useState(null); // { state, keys: Set }
+  const [preview, setPreview] = useState(null); // Set — sudrash paytidagi tanlov
   const keysRef = useRef(visibleKeys);
   keysRef.current = visibleKeys;
 
   const keyAt = useCallback((y) => {
     const s = st.current;
     const { top, bottom } = contentBox(scrollRef.current);
-    const head = scrollRef.current.querySelector('thead')?.getBoundingClientRect().height ?? 0;
-    // Ko'rsatkich jadvaldan chiqib ketsa ham chekkadagi qatorni olamiz.
+    const head = scrollRef.current.querySelector('.b-head')?.getBoundingClientRect().height ?? 0;
+    // Ko'rsatkich board'dan chiqib ketsa ham chekkadagi qatorni olamiz.
     const cy = Math.min(bottom - 2, Math.max(top + head + 2, y));
     const el = document.elementFromPoint(s.colX, cy);
-    return el?.closest('tr[data-key]')?.dataset.key ?? null;
+    return el?.closest('[data-key]')?.dataset.key ?? null;
   }, []);
 
   const update = useCallback(() => {
@@ -144,7 +145,7 @@ function useDragSelect({ visibleKeys, isChecked, onCommit }) {
     if (i < 0 || j < 0) return;
     s.active = true;
     s.keys = vis.slice(Math.min(i, j), Math.max(i, j) + 1);
-    setPreview({ state: s.state, keys: new Set(s.keys) });
+    setPreview(new Set(s.keys));
   }, [keyAt]);
 
   const stop = useCallback(
@@ -166,7 +167,7 @@ function useDragSelect({ visibleKeys, isChecked, onCommit }) {
         };
         window.addEventListener('click', swallow, { capture: true, once: true });
         setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 0);
-        onCommit(s.startKey, s.keys, s.state);
+        onCommit(s.startKey, s.keys);
       }
     },
     [onCommit],
@@ -175,22 +176,21 @@ function useDragSelect({ visibleKeys, isChecked, onCommit }) {
   const onPointerDown = useCallback(
     (e) => {
       if (e.button !== 0 || e.shiftKey || e.pointerType === 'touch') return;
-      const cell = e.target.closest('td.c-check, td.c-num');
-      const tr = cell?.closest('tr[data-key]');
-      if (!tr) return;
+      const cell = e.target.closest('.b-cell.c-check, .b-cell.c-num');
+      const rowEl = cell?.closest('[data-key]');
+      if (!rowEl) return;
       // Matn belgilanib ketmasin.
       e.preventDefault();
       const r = cell.getBoundingClientRect();
       const s = {
-        startKey: tr.dataset.key,
-        state: !isChecked(tr.dataset.key),
+        startKey: rowEl.dataset.key,
         colX: r.left + r.width / 2,
         y: e.clientY,
         active: false,
         keys: [],
         timer: 0,
       };
-      // Jadval cheti yaqinida — avto-scroll.
+      // Board cheti yaqinida — avto-scroll.
       const tick = () => {
         const box = contentBox(scrollRef.current);
         let dy = 0;
@@ -216,7 +216,7 @@ function useDragSelect({ visibleKeys, isChecked, onCommit }) {
       // Taymer (rAF emas): rAF fon/yashirin oynada to'xtaydi.
       s.timer = setInterval(tick, 16);
     },
-    [isChecked, update, stop],
+    [update, stop],
   );
 
   useEffect(() => () => stop(false), [stop]);
@@ -234,6 +234,7 @@ function contentBox(el) {
 }
 
 // ── Kompaniya sarlavhasi ───────────────────────────────────────────────────
+// ▸ (ochilganda 90° buriladi) + nom + "3/12" (hammasi bajarilsa yashil).
 // Kompaniya eslatmasi FAQAT shu yerda ko'rinadi (har haydovchi ostida emas).
 function GroupHead({ group: g, collapsed, onToggle, note, boards, onToggleBoard, onOpenSettings }) {
   const [menu, setMenu] = useState(false);
@@ -254,98 +255,86 @@ function GroupHead({ group: g, collapsed, onToggle, note, boards, onToggleBoard,
     };
   }, [menu]);
   const onBoards = boards.filter((b) => b.companies.includes(g.companyId));
+  const all = g.drivers.length > 0 && g.checked === g.drivers.length;
 
   return (
-    <div className="group-head" ref={wrap}>
-      <button type="button" className="group-toggle" aria-expanded={!collapsed} onClick={() => onToggle(g.companyId)}>
-        <span className={`chev ${collapsed ? '' : 'chev-open'}`} aria-hidden="true" />
-        <span className="group-name">{g.company}</span>
-        <span className="group-count num">
-          {g.checked}/{g.drivers.length}
-        </span>
-      </button>
-      {note && (
-        <button type="button" className="group-note" title={`${note}\n\nClick to edit`} onClick={() => onOpenSettings('requirements', { company: g.companyId })}>
-          ⚠ {note}
+    <div className="b-group" role="row">
+      <span className="b-group-label" role="rowheader" ref={wrap}>
+        <button type="button" className="b-group-toggle" aria-expanded={!collapsed} onClick={() => onToggle(g.companyId)}>
+          <span className={`b-caret ${collapsed ? '' : 'is-open'}`} aria-hidden="true">
+            ▸
+          </span>
+          <span className="group-name">{g.company}</span>
+          <span className={`b-count num ${all ? 'is-all' : ''}`}>
+            {g.checked}/{g.drivers.length}
+          </span>
         </button>
-      )}
-      <span className="group-actions">
-        {!note && (
-          <button type="button" className="btn btn-xs btn-ghost" onClick={() => onOpenSettings('requirements', { company: g.companyId })}>
-            + Note
+        {note && (
+          <button type="button" className="group-note" title={`${note}\n\nClick to edit`} onClick={() => onOpenSettings('requirements', { company: g.companyId })}>
+            ⚠ {note}
           </button>
         )}
-        <button type="button" className="btn btn-xs btn-ghost" aria-haspopup="true" aria-expanded={menu} onClick={() => setMenu(!menu)} title="Add this company to boards">
-          {onBoards.length ? `Boards: ${onBoards.map((b) => b.name).join(', ')}` : '+ Board'}
-        </button>
-        {menu && (
-          <div className="menu menu-anchored menu-left board-menu" role="group" aria-label={`Boards for ${g.company}`}>
-            {boards.map((b) => (
-              <label key={b.id} className="menu-item">
-                <input type="checkbox" checked={b.companies.includes(g.companyId)} onChange={() => onToggleBoard(g.companyId, g.company, b.id)} />
-                <span className="grow">{b.name}</span>
-                <span className="muted small num">{b.companies.length}</span>
-              </label>
-            ))}
-            <button
-              type="button"
-              className="menu-item menu-aux"
-              onClick={() => {
-                setMenu(false);
-                onOpenSettings('boards');
-              }}
-            >
-              {boards.length ? 'Manage boards…' : 'Create a board…'}
+        <span className="group-actions">
+          {!note && (
+            <button type="button" className="btn btn-xs btn-ghost" onClick={() => onOpenSettings('requirements', { company: g.companyId })}>
+              + Note
             </button>
-          </div>
-        )}
+          )}
+          <button type="button" className="btn btn-xs btn-ghost" aria-haspopup="true" aria-expanded={menu} onClick={() => setMenu(!menu)} title="Add this company to boards">
+            {onBoards.length ? `Boards: ${onBoards.map((b) => b.name).join(', ')}` : '+ Board'}
+          </button>
+          {menu && (
+            <div className="menu menu-anchored menu-left board-menu" role="group" aria-label={`Boards for ${g.company}`}>
+              {boards.map((b) => (
+                <label key={b.id} className="menu-item">
+                  <input type="checkbox" checked={b.companies.includes(g.companyId)} onChange={() => onToggleBoard(g.companyId, g.company, b.id)} />
+                  <span className="grow">{b.name}</span>
+                  <span className="muted small num">{b.companies.length}</span>
+                </label>
+              ))}
+              <button
+                type="button"
+                className="menu-item menu-aux"
+                onClick={() => {
+                  setMenu(false);
+                  onOpenSettings('boards');
+                }}
+              >
+                {boards.length ? 'Manage boards…' : 'Create a board…'}
+              </button>
+            </div>
+          )}
+        </span>
       </span>
     </div>
   );
 }
 
-// Sarlavhadagi uch holatli belgi. Ikkala yo'nalish ham ikki bosishli:
-// birinchi bosish so'raydi, ikkinchisi bajaradi.
-function HeaderCheck({ state, armed, onClick, count }) {
-  const ref = useRef(null);
-  useEffect(() => {
-    if (ref.current) ref.current.indeterminate = state === 'some';
-  }, [state]);
-  const verb = state === 'all' ? 'Clear' : 'Check';
-  return (
-    <span className="hcheck">
-      <input
-        ref={ref}
-        type="checkbox"
-        checked={state === 'all'}
-        onChange={() => {}}
-        onClick={(e) => {
-          e.preventDefault();
-          onClick();
-        }}
-        aria-label={armed ? `Click again to ${verb.toLowerCase()} ${count}` : `${verb} all ${count} shown drivers`}
-        aria-describedby={armed ? 'hcheck-tip' : undefined}
-        disabled={!count}
-      />
-      {armed && (
-        <span id="hcheck-tip" className={`hcheck-tip ${state === 'all' ? 'tip-amber' : ''}`} role="status">
-          Click again to {verb.toLowerCase()} {count}
-        </span>
-      )}
-    </span>
-  );
-}
-
-const Row = memo(function Row({ index, d, row, preview, config, onCheckClick, onPatch, notice, onDismissNotice, certSupported, certState, onCertify, onCopyName, onOpenSettings }) {
-  const real = Boolean(row?.checkedAt);
-  // Sudrash paytida — oldindan ko'rinish (qo'yib yuborilganda saqlanadi).
-  const checked = preview ?? real;
+const Row = memo(function Row({ index, d, row, selected, onSelectClick, config, onCheckClick, onPatch, certSupported, certState, onCertify, onCopyName, onOpenSettings }) {
+  // "Checked" qator rangini o'zgartirmaydi — faqat checkbox to'ladi.
+  const checked = Boolean(row?.checkedAt);
   const openResp = () => onOpenSettings('responsible');
   const openCols = () => onOpenSettings('columns');
   return (
-    <tr data-key={d.key} className={`${checked ? 'is-checked' : ''} ${preview !== undefined ? 'is-preview' : ''}`}>
-      <td className="sticky c-num num muted">{index}</td>
-      <td className="sticky c-check">
+    <div data-key={d.key} role="row" aria-selected={selected} className={`b-row ${selected ? 'is-selected' : ''}`}>
+      {/* # — raqam; ustiga kelinganda/tanlovda kvadrat tanlash belgisi. */}
+      <span className="b-cell b-sticky c-num" role="cell" onClick={(e) => onSelectClick(d.key, e.shiftKey)}>
+        <span className="idx num">{index}</span>
+        <span
+          className={`selbox ${selected ? 'is-on' : ''}`}
+          role="checkbox"
+          aria-checked={selected}
+          aria-label={`Select ${d.driverName}`}
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault();
+              onSelectClick(d.key, e.shiftKey);
+            }
+          }}
+        />
+      </span>
+      <span className="b-cell b-sticky c-check" role="cell">
         <input
           type="checkbox"
           className="rowcheck"
@@ -356,39 +345,36 @@ const Row = memo(function Row({ index, d, row, preview, config, onCheckClick, on
             onCheckClick(d.key, e.shiftKey);
           }}
           aria-label={`Checked: ${d.driverName}`}
-          title={real ? `Checked by ${row.checkedBy} · ${when(row.checkedAt)}` : 'Mark as checked · Shift-click for a range · drag to select many'}
+          title={checked ? `Checked by ${row.checkedBy} · ${when(row.checkedAt)}` : 'Mark as checked · Shift-click for a range'}
         />
-      </td>
-      <td className="sticky c-driver">
+      </span>
+      <span className="b-cell b-sticky c-driver" role="cell">
         <span className="driver-cell">
-          <CycleRing min={d.cycleRemainingMin} notice={notice} onDismiss={() => onDismissNotice(d.key)} />
-          <DriverName driver={d} requirement={row?.requirement} onCopy={onCopyName} />
+          <CycleRing min={d.cycleRemainingMin} />
+          <DriverInfo driver={d} requirement={row?.requirement} onCopy={onCopyName} />
         </span>
-      </td>
-      <td className="num ellipsis" title={d.truck}>
+      </span>
+      <span className="b-cell num" role="cell" title={d.truck}>
         {d.truck || <span className="dash">—</span>}
-      </td>
-      <td>
+      </span>
+      <span className="b-cell" role="cell">
         <Dropdown label="Responsible" value={row?.responsible ?? ''} options={config.responsibles} onChange={(v) => onPatch(d.key, { responsible: v })} emptyHint="Add people in Settings" onEmptyAction={openResp} />
-      </td>
-      <td>
-        <LocationCell driver={d} />
-      </td>
-      <td>
+      </span>
+      <span className="b-cell" role="cell">
         <Dropdown label="Status" value={row?.status ?? ''} options={config.statuses} onChange={(v) => onPatch(d.key, { status: v })} emptyHint="Add statuses in Settings" onEmptyAction={openCols} />
-      </td>
-      <td>
-        <span className="pf">
-          <Dropdown compact label="Profile Form" value={row?.profileForm ?? ''} options={config.profileForms} onChange={(v) => onPatch(d.key, { profileForm: v })} emptyHint="Add options in Settings" onEmptyAction={openCols} />
-          <FormMeta change={d.formChange} />
-        </span>
-      </td>
-      <td className="c-right">
+      </span>
+      <span className="b-cell" role="cell">
+        <LocationCell driver={d} />
+      </span>
+      <span className="b-cell" role="cell">
+        <FormMeta change={d.formChange} />
+      </span>
+      <span className="b-cell right" role="cell">
         <DriveLeft min={d.driveRemainingMin} />
-      </td>
-      <td>
+      </span>
+      <span className="b-cell" role="cell">
         <CertifyCell supported={certSupported} state={certState} row={row} driverName={d.driverName} onClick={() => onCertify(d)} />
-      </td>
-    </tr>
+      </span>
+    </div>
   );
 });

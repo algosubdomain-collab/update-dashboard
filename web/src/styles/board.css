@@ -1,0 +1,954 @@
+/* Board — ClickUp/Notion uslubidagi jadval. Har bir qator — CSS grid
+   (<table> emas): ustun kengliklari bitta joyda (--cols), sticky ustunlar va
+   bir xil qator balandligi oson boshqariladi.
+   Qoidalar: matn qatorda HECH QACHON ikki qatorga o'tmaydi, raqamlar tabular,
+   hover'da hech narsa siljimaydi, menyular overflow bilan kesilmaydi (portal). */
+
+.board {
+  --cols: 40px 44px minmax(230px, 1.2fr) 80px 160px 180px minmax(150px, 0.9fr) minmax(230px, 1fr) 96px 128px;
+  --left-2: 40px;
+  --left-3: 84px;
+  position: relative;
+  overflow: auto;
+  max-height: calc(100dvh - 176px);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--canvas);
+}
+.board-inner {
+  min-width: 1340px;
+}
+.board.is-dragging {
+  user-select: none;
+  cursor: ns-resize;
+}
+
+/* ── Qator ─────────────────────────────────────────────────────────────── */
+.b-row {
+  display: grid;
+  grid-template-columns: var(--cols);
+  height: var(--row);
+  border-bottom: 1px solid var(--line);
+  background: var(--canvas);
+}
+/* Hover — darhol (kechikishsiz) */
+.b-row:hover {
+  background: var(--card-2);
+}
+/* "Checked" qator rangini o'zgartirmaydi. Tanlangan (ommaviy amal uchun)
+   qator — nozik ko'k tus: bu UI holati, ma'lumot emas. */
+.b-row.is-selected {
+  background: color-mix(in srgb, var(--sky) 9%, var(--canvas));
+}
+.b-row.is-selected:hover {
+  background: color-mix(in srgb, var(--sky) 12%, var(--card-2));
+}
+
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+}
+.b-row[data-key] {
+  animation: row-in var(--t-menu) var(--ease-out) both;
+}
+
+.b-cell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--s-2);
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: var(--t-cell);
+  /* Sticky kataklar ostidagi siljigan matn ko'rinmasin — qator fonini oladi */
+  background: inherit;
+}
+.b-cell.right {
+  justify-content: flex-end;
+  padding-right: var(--s-4);
+}
+.b-cell.center {
+  justify-content: center;
+}
+.b-sticky {
+  position: sticky;
+  z-index: 2;
+}
+.b-sticky.c-num {
+  left: 0;
+  justify-content: center;
+  color: var(--ink-3);
+  font-size: var(--t-num);
+  cursor: pointer;
+}
+/* # — raqam; qator ustiga kelinganda yoki tanlov bo'lsa — kvadrat belgi */
+.selbox {
+  display: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid color-mix(in srgb, var(--ink-3) 80%, transparent);
+  border-radius: 4px;
+  transition: background var(--t-hover) var(--ease-out), border-color var(--t-hover) var(--ease-out);
+}
+.selbox.is-on {
+  background: var(--sky);
+  border-color: var(--sky);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.2l2.6 2.6L12 5.4' fill='none' stroke='%230e1113' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+}
+.b-row:hover .selbox,
+.board.has-sel .selbox,
+.selbox:focus-visible {
+  display: block;
+}
+.b-row:hover .idx,
+.board.has-sel .idx {
+  display: none;
+}
+.b-sticky.c-check {
+  left: var(--left-2);
+  justify-content: center;
+  cursor: ns-resize;
+  user-select: none;
+}
+.b-sticky.c-driver {
+  left: var(--left-3);
+  border-right: 1px solid var(--line);
+  overflow: visible;
+}
+.c-num {
+  cursor: ns-resize;
+  user-select: none;
+}
+
+/* ── Sarlavha qatori ───────────────────────────────────────────────────── */
+.b-head {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: var(--head);
+  background: var(--canvas);
+}
+.b-head:hover {
+  background: var(--canvas);
+}
+.b-head .b-cell {
+  color: var(--ink-3);
+  font-size: var(--t-label);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  /* Sarlavhada "…" yo'q — qisqa, to'liq yorliqlar */
+  text-overflow: clip;
+}
+.b-head .b-sticky {
+  z-index: 6;
+}
+
+/* ── Kompaniya guruhi ──────────────────────────────────────────────────── */
+.b-group {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+}
+.b-group-label {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  max-width: calc(100vw - 64px);
+  padding: 0 var(--s-3);
+  white-space: nowrap;
+}
+.b-group-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 40px;
+  padding: 0 var(--s-1);
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--t-cell);
+  font-weight: 600;
+  cursor: pointer;
+}
+.b-caret {
+  display: inline-block;
+  width: 10px;
+  color: var(--ink-3);
+  font-size: var(--t-label);
+  transition: transform var(--t-caret) var(--ease-out);
+}
+.b-caret.is-open {
+  transform: rotate(90deg);
+}
+.b-count {
+  color: var(--ink-3);
+  font-size: var(--t-num);
+  font-weight: 500;
+  transition: color var(--t-hover) var(--ease-out);
+}
+.b-count.is-all {
+  color: var(--lime);
+}
+.b-group .group-note {
+  max-width: 48ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px var(--s-2);
+  border: 0;
+  border-radius: var(--r-tag);
+  background: transparent;
+  color: var(--red);
+  font-size: var(--t-label);
+  font-weight: 500;
+  cursor: pointer;
+}
+.b-group .group-actions {
+  position: relative;
+  display: inline-flex;
+  gap: var(--s-1);
+  opacity: 0;
+  transition: opacity var(--t-hover) var(--ease-out);
+}
+.b-group:hover .group-actions,
+.b-group .group-actions:focus-within,
+.b-group .group-actions:has([aria-expanded='true']) {
+  opacity: 1;
+}
+.board-menu {
+  z-index: 20;
+  min-width: 200px;
+}
+.board-menu label.menu-item {
+  justify-content: flex-start;
+  gap: var(--s-2);
+}
+
+/* ── Progress halqasi ──────────────────────────────────────────────────── */
+.ring {
+  --c: var(--ink-3);
+  position: relative;
+  flex: none;
+  width: var(--ring-size);
+  height: var(--ring-size);
+  display: inline-grid;
+  place-items: center;
+}
+.ring-lime { --c: var(--lime); }
+.ring-amber { --c: var(--amber); }
+.ring-red { --c: var(--red); }
+.ring svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.ring-track {
+  fill: none;
+  stroke: var(--card-3);
+  stroke-width: var(--ring-stroke);
+}
+.ring-arc {
+  fill: none;
+  stroke: var(--c);
+  stroke-width: var(--ring-stroke);
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--c) 70%, transparent));
+  transition: stroke-dashoffset var(--t-progress) var(--ease-std);
+}
+.ring-num {
+  position: relative;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-cell);
+  font-weight: 700;
+  color: var(--ink);
+}
+.ring-none .ring-num {
+  color: var(--ink-3);
+}
+
+/* Halqa ustidagi xabarnoma (Dynamic Island kabi) — faqat ma'lumot, bosilmaydi */
+@keyframes badge-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 3px) scale(0.92);
+  }
+}
+.ring-badge {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  z-index: 1;
+  transform: translateX(-50%);
+  padding: 1px 6px;
+  border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+  border-radius: var(--r-tag);
+  background: color-mix(in srgb, var(--c) 18%, var(--canvas));
+  box-shadow:
+    0 0 0 3px var(--canvas),
+    0 0 10px color-mix(in srgb, var(--c) 35%, transparent);
+  color: var(--c);
+  font-size: var(--t-badge);
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: badge-in var(--t-badge-in) var(--ease-spring) both;
+}
+
+/* ── Driver katagi ─────────────────────────────────────────────────────── */
+.driver-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-width: 0;
+  width: 100%;
+}
+.driver-lines {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.driver-line {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.driver-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink);
+  font-weight: 550;
+}
+a.driver-name:hover {
+  color: var(--sky);
+  text-decoration: none;
+}
+.sub {
+  flex: none;
+  color: var(--ink-3);
+  font-size: var(--t-label);
+}
+.flag-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--red);
+}
+/* Talab (requirement) — bir qatorli qizil chip */
+.note-chip {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--red);
+  font-size: var(--t-label);
+  font-weight: 500;
+}
+
+/* Duty status chip — nuqta + yorliq, holat rangida */
+.status-chip {
+  --c: var(--ink-3);
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--c);
+  font-size: var(--t-label);
+  font-weight: 550;
+}
+.status-chip::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: currentColor;
+}
+.st-driving { --c: var(--lime); }
+.st-on_duty { --c: var(--amber); }
+.st-sleeper { --c: var(--violet); }
+.st-off_duty { --c: var(--slate); }
+.st-unknown { --c: var(--red); }
+
+/* Xatolar badge'i */
+.err-badge {
+  flex: none;
+  padding: 1px 7px;
+  border: 1px solid color-mix(in srgb, var(--red) 40%, transparent);
+  border-radius: var(--r-tag);
+  background: color-mix(in srgb, var(--red) 16%, var(--canvas));
+  color: var(--red);
+  font-size: var(--t-label);
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: default;
+}
+.err-badge:focus-visible {
+  outline-color: var(--red);
+}
+.err-pop {
+  position: fixed;
+  z-index: 60;
+  width: 320px;
+  max-height: 360px;
+  overflow: auto;
+  padding: var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pop);
+  background: var(--card-2);
+  box-shadow: var(--shadow-menu);
+  animation: menu-in var(--t-pop) var(--ease-out) both;
+}
+.err-pop h4 {
+  margin: 0 0 var(--s-2);
+  color: var(--ink-3);
+  font-size: var(--t-label);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.err-pop ul {
+  list-style: none;
+  margin: 0 0 var(--s-3);
+  padding: 0;
+  display: grid;
+  gap: var(--s-2);
+}
+.err-pop ul:last-child {
+  margin-bottom: 0;
+}
+.err-pop li {
+  font-size: var(--t-help);
+  line-height: 1.4;
+  white-space: normal;
+}
+.err-pop .cnt {
+  color: var(--red);
+  font-weight: 600;
+}
+.err-pop .dates {
+  color: var(--ink-3);
+}
+
+/* ── Notion uslubidagi select ──────────────────────────────────────────── */
+.dd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-1);
+  width: 100%;
+  height: 34px;
+  padding: 0 var(--s-1);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--t-hover) var(--ease-out);
+}
+.dd:hover,
+.dd[aria-expanded='true'] {
+  background: var(--card-3);
+}
+.dd-dash {
+  padding-left: var(--s-2);
+  color: var(--ink-3);
+}
+.dd-caret {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-right: var(--s-2);
+  border-right: 1.5px solid var(--ink-3);
+  border-bottom: 1.5px solid var(--ink-3);
+  transform: translateY(-2px) rotate(45deg);
+  opacity: 0;
+  transition: opacity var(--t-hover) var(--ease-out);
+}
+.dd:hover .dd-caret,
+.dd:focus-visible .dd-caret,
+.dd[aria-expanded='true'] .dd-caret {
+  opacity: 1;
+}
+.opt-pill {
+  --c: var(--slate);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 3px 10px;
+  border-radius: var(--r-tag);
+  background: color-mix(in srgb, var(--c) 9%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 22%, transparent);
+  color: var(--ink);
+  font-size: var(--t-cell);
+  font-weight: 500;
+  line-height: 1.5;
+}
+.opt-pill > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.opt-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--c);
+}
+.c-lime { --c: var(--lime); }
+.c-amber { --c: var(--amber); }
+.c-red { --c: var(--red); }
+.c-violet { --c: var(--violet); }
+.c-sky { --c: var(--sky); }
+.c-slate { --c: var(--slate); }
+/* Ro'yxatdan o'chirilgan qiymat — punktir, so'niq */
+.opt-pill.is-stale {
+  background: transparent;
+  box-shadow: none;
+  outline: 1px dashed var(--line);
+  outline-offset: -1px;
+  color: var(--ink-3);
+}
+.opt-pill.is-stale .opt-dot {
+  background: var(--ink-3);
+}
+.menu .menu-item {
+  justify-content: space-between;
+}
+.menu-tick {
+  color: var(--ink-2);
+  font-size: var(--t-help);
+}
+
+/* ── Current location ──────────────────────────────────────────────────── */
+.loc {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+  color: var(--ink-2);
+  font-size: var(--t-help);
+}
+.loc:hover {
+  color: var(--ink);
+  text-decoration: none;
+}
+.loc-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.loc-scale {
+  flex: none;
+  color: var(--red);
+  font-weight: 600;
+}
+.dot-core {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--ink-3);
+}
+.loc-alert .dot-core {
+  background: var(--red);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--red) 70%, transparent);
+}
+
+/* ── Profile form ("Changed") ──────────────────────────────────────────── */
+.pf {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  width: 100%;
+}
+.pf-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-1);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: var(--t-num);
+  color: var(--ink-2);
+}
+.pf-val {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pf-sep {
+  color: var(--ink-3);
+}
+.pf-ago {
+  flex: none;
+  color: var(--ink-3);
+}
+.pf-ago.is-recent {
+  color: var(--amber);
+}
+.pf-where {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--sky);
+  font-size: var(--t-label);
+}
+.checking {
+  color: var(--ink-3);
+  font-size: var(--t-help);
+}
+
+/* ── Drive left ────────────────────────────────────────────────────────── */
+.drive {
+  font-size: var(--t-em);
+  font-weight: 600;
+  color: var(--ink);
+}
+.drive.tone-red {
+  color: var(--red);
+}
+.drive.tone-amber {
+  color: var(--amber);
+}
+.drive.is-none {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+/* ── Certify ───────────────────────────────────────────────────────────── */
+.cert {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.cert-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--card-3);
+  transition: background var(--t-hover) var(--ease-out);
+}
+.cert-dot.is-on {
+  background: var(--lime);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--lime) 70%, transparent);
+}
+.cert-running {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--ink-2);
+  font-size: var(--t-help);
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--card-3);
+  border-top-color: var(--sky);
+  border-radius: var(--r-pill);
+  animation: spin 0.7s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2s;
+  }
+}
+
+/* ── Sarlavhadagi uch holatli belgi ────────────────────────────────────── */
+.hcheck {
+  position: relative;
+  display: inline-flex;
+}
+.hcheck-tip {
+  position: absolute;
+  top: calc(100% + var(--s-2));
+  left: -6px;
+  z-index: 10;
+  padding: var(--s-1) var(--s-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--card-2);
+  box-shadow: var(--shadow-menu);
+  color: var(--ink);
+  font-size: var(--t-help);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+  animation: menu-in var(--t-menu) var(--ease-out) both;
+}
+.hcheck-tip.tip-amber {
+  color: var(--amber);
+}
+
+/* ── Bo'sh holat / yuklanish — bitta sokin qator ───────────────────────── */
+.quiet {
+  margin: var(--s-4) var(--s-1);
+  color: var(--ink-3);
+  font-size: var(--t-help);
+}
+.quiet button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--sky);
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .board {
+    --cols: 30px 40px minmax(200px, 1fr) 80px 140px 150px 170px 190px 90px 132px;
+    --left-2: 30px;
+    --left-3: 70px;
+    max-height: calc(100dvh - 240px);
+  }
+  .board-inner {
+    min-width: 1180px;
+  }
+}
+
+/* ── Board ustidagi panel ──────────────────────────────────────────────── */
+.dash {
+  padding: var(--s-3) var(--s-3) var(--s-4);
+}
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  margin-bottom: var(--s-2);
+}
+.bar .page-title {
+  margin: 0 var(--s-1) 0 0;
+}
+.bar .search {
+  flex: 0 1 240px;
+  min-width: 160px;
+}
+.bar .search input {
+  width: 100%;
+  border-radius: var(--r-sm);
+}
+
+/* Saqlangan ko'rinishlar — pill tab'lar, har birida soni */
+.views {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--card);
+}
+.view {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 var(--s-3);
+  border: 0;
+  border-radius: var(--r-tag);
+  background: transparent;
+  color: var(--ink-2);
+  font-size: var(--t-help);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--t-hover) var(--ease-out), color var(--t-hover) var(--ease-out);
+}
+.view:hover {
+  color: var(--ink);
+  background: var(--card-2);
+}
+.view.is-on {
+  color: var(--ink);
+  background: var(--card-3);
+}
+.view-count {
+  color: var(--ink-3);
+  font-size: var(--t-num);
+}
+.view-add {
+  color: var(--ink-3);
+}
+
+/* Sort — segmented control (pill konteyner, faol segment --card-3) */
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--card);
+}
+.segmented button {
+  height: 24px;
+  padding: 0 var(--s-3);
+  border: 0;
+  border-radius: var(--r-tag);
+  background: transparent;
+  color: var(--ink-2);
+  font-size: var(--t-help);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--t-hover) var(--ease-out), color var(--t-hover) var(--ease-out);
+}
+.segmented button:hover {
+  color: var(--ink);
+}
+.segmented button.is-on {
+  background: var(--card-3);
+  color: var(--ink);
+}
+
+/* Filtrlar */
+.filters {
+  z-index: 25;
+  min-width: 220px;
+}
+.filters label.menu-item {
+  justify-content: flex-start;
+  gap: var(--s-2);
+}
+.filters-title {
+  padding: var(--s-1) var(--s-2);
+  color: var(--ink-3);
+  font-size: var(--t-label);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.filter-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: var(--r-tag);
+  background: var(--sky);
+  color: var(--canvas);
+  font-size: var(--t-badge);
+  font-weight: 700;
+}
+
+/* Hisoblagichlar va yangilanish holati */
+.meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-4);
+  min-height: 28px;
+  margin-bottom: var(--s-2);
+  color: var(--ink-3);
+  font-size: var(--t-help);
+}
+.meta-line .num {
+  font-size: var(--t-num);
+}
+.meta-line .sync {
+  font-size: var(--t-help);
+}
+.btn .spinner {
+  width: 12px;
+  height: 12px;
+}
+.btn-primary .spinner {
+  border-color: rgb(0 0 0 / 0.2);
+  border-top-color: var(--canvas);
+}
+
+@media (max-width: 720px) {
+  .bar .search {
+    flex: 1 1 100%;
+  }
+  .bar .grow {
+    display: none;
+  }
+}
+
+/* ── Ommaviy amallar paneli — pastda suzib turadi ──────────────────────── */
+@keyframes selbar-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+}
+.selbar {
+  position: fixed;
+  left: 50%;
+  bottom: var(--s-5);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  max-width: calc(100vw - 2 * var(--s-3));
+  padding: var(--s-2) var(--s-2) var(--s-2) var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--card-2);
+  box-shadow: var(--shadow-menu);
+  transform: translateX(-50%);
+  animation: selbar-in var(--t-pop) var(--ease-out) both;
+  flex-wrap: wrap;
+}
+.selbar-count {
+  color: var(--ink);
+  font-size: var(--t-cell);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.selbar-count .num {
+  color: var(--sky);
+}
+.selbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--line);
+}
+.bulk {
+  position: relative;
+}
+.bulk-menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  min-width: 200px;
+  margin: 0;
+  list-style: none;
+  transform-origin: bottom left;
+}
+.dd-caret.is-up {
+  opacity: 1;
+  margin: 0 0 0 2px;
+  transform: translateY(1px) rotate(225deg);
+}

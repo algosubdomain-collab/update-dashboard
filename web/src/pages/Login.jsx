@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import BrandMark from '../components/BrandMark.jsx';
 import { post } from '../lib/api.js';
 
 export default function Login({ onLogin, devLogin }) {
@@ -38,7 +39,11 @@ export default function Login({ onLogin, devLogin }) {
   return (
     <main className="auth">
       <form className="card auth-card" onSubmit={submit}>
-        <h1 className="auth-title">Update Dashboard</h1>
+        <div className="auth-brand">
+          <BrandMark />
+          <h1 className="auth-title">Update Dashboard</h1>
+          <p>Sign in to continue</p>
+        </div>
         <label className="field">
           <span>Login</span>
           <input autoFocus autoComplete="username" value={login} onChange={(e) => setLogin(e.target.value)} required />
